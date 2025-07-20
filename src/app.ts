@@ -21,7 +21,7 @@ app.use(cors({ origin: ["http://localhost:3000"], credentials: true }));
 app.use("/api/v1", router);
 
 app.get("/", (req: Request, res: Response) => {
-  res.send("Hi Next Level Developer !");
+  res.send("Hi Mini Event Scheduler  !");
 });
 
 app.use(globalErrorHandler);
