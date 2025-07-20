@@ -57,6 +57,7 @@ const createEventIntoDB = async (payload: TEvent) => {
   };
 
   const result = await Event.create(eventData);
+  console.log("this is create", result);
   return result;
 };
 
@@ -101,7 +102,7 @@ const getAllEventsFromDB = async (query: Record<string, unknown>) => {
     totalPages,
     totalPage: totalPages,
   };
-
+  console.log(meta, result);
   return {
     meta,
     result,
