@@ -15,16 +15,5 @@
       "src": "/(.*)",
       "dest": "/dist/server.js"
     }
-  ],
-  "env": {
-    "NODE_ENV": "production"
-  },
-  "functions": {
-    "dist/server.js": {
-      "maxDuration": 30
-    }
-  },
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "installCommand": "npm install"
+  ]
 }
