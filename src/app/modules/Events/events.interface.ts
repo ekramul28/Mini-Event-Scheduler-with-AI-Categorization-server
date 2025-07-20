@@ -5,4 +5,7 @@ export type TEvent = {
   notes?: string;
   archived?: boolean;
   category?: string;
+  _id?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 };

@@ -1,4 +1,3 @@
-import QueryBuilder from "../../builder/QueryBuilder";
 import { EventSearchableFields } from "./events.constant";
 import { TEvent } from "./events.interface";
 import { Event } from "./events.model";
@@ -62,18 +61,46 @@ const createEventIntoDB = async (payload: TEvent) => {
 };
 
 const getAllEventsFromDB = async (query: Record<string, unknown>) => {
-  const eventQuery = new QueryBuilder(
-    Event.find({ archived: { $ne: true } }),
-    query
-  )
-    .search(EventSearchableFields)
-    .filter()
-    .sort()
-    .paginate()
-    .fields();
+  // Get all non-archived events
+  let events = await Event.find({ archived: { $ne: true } });
 
-  const result = await eventQuery.modelQuery;
-  const meta = await eventQuery.countTotal();
+  // Search functionality
+  const searchTerm = query.searchTerm as string;
+  if (searchTerm) {
+    const searchLower = searchTerm.toLowerCase();
+    events = events.filter((event) =>
+      EventSearchableFields.some((field) =>
+        event[field as keyof typeof event]
+          ?.toString()
+          .toLowerCase()
+          .includes(searchLower)
+      )
+    );
+  }
+
+  // Sort by date and time
+  events.sort((a, b) => {
+    const dateA = new Date(`${a.date}T${a.time}`);
+    const dateB = new Date(`${b.date}T${b.time}`);
+    return dateA.getTime() - dateB.getTime();
+  });
+
+  // Pagination
+  const page = parseInt(query.page as string) || 1;
+  const limit = parseInt(query.limit as string) || 10;
+  const skip = (page - 1) * limit;
+
+  const result = events.slice(skip, skip + limit);
+  const total = events.length;
+  const totalPages = Math.ceil(total / limit);
+
+  const meta = {
+    page,
+    limit,
+    total,
+    totalPages,
+    totalPage: totalPages,
+  };
 
   return {
     meta,
@@ -97,9 +124,7 @@ const updateEventIntoDB = async (id: string, payload: Partial<TEvent>) => {
     }
   }
 
-  const result = await Event.findOneAndUpdate({ _id: id }, payload, {
-    new: true,
-  });
+  const result = await Event.findOneAndUpdate(id, payload, { new: true });
   return result;
 };
 
@@ -111,7 +136,7 @@ const deleteEventFromDB = async (id: string) => {
 // Archive event (set archived status to true)
 const archiveEventFromDB = async (id: string) => {
   const result = await Event.findOneAndUpdate(
-    { _id: id },
+    id,
     { archived: true },
     { new: true }
   );

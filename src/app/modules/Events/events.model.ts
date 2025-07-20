@@ -1,52 +1,90 @@
-import { Schema, model } from "mongoose";
 import { TEvent } from "./events.interface";
 
-const eventSchema = new Schema<TEvent>(
-  {
-    title: {
-      type: String,
-      required: true,
-      trim: true,
-      maxlength: 100,
-    },
-    date: {
-      type: String,
-      required: true,
-      validate: {
-        validator: function (v: string) {
-          return /^\d{4}-\d{2}-\d{2}$/.test(v);
-        },
-        message: "Date must be in YYYY-MM-DD format",
-      },
-    },
-    time: {
-      type: String,
-      required: true,
-      validate: {
-        validator: function (v: string) {
-          return /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(v);
-        },
-        message: "Time must be in HH:MM format (24-hour)",
-      },
-    },
-    notes: {
-      type: String,
-      trim: true,
-      maxlength: 500,
-    },
-    archived: {
-      type: Boolean,
-      default: false,
-    },
-    category: {
-      type: String,
-      enum: ["Work", "Personal", "Other"],
-      default: "Other",
-    },
-  },
-  {
-    timestamps: true,
-  }
-);
+// In-memory storage for events (since we're not using a database)
+let events: (TEvent & {
+  _id: string;
+  createdAt: Date;
+  updatedAt: Date;
+})[] = [];
+let nextId = 1;
 
-export const Event = model<TEvent>("Event", eventSchema);
+const create = async (eventData: TEvent) => {
+  const newEvent = {
+    _id: nextId.toString(),
+    ...eventData,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+  events.push(newEvent);
+  nextId++;
+  return newEvent;
+};
+
+const find = async (query?: any) => {
+  let filteredEvents = events;
+
+  // Filter by archived status if specified
+  if (query && query.archived) {
+    filteredEvents = events.filter(
+      (event) => event.archived === query.archived.$ne
+    );
+  } else {
+    // Default: return non-archived events
+    filteredEvents = events.filter((event) => !event.archived);
+  }
+
+  return filteredEvents;
+};
+
+const findById = async (id: string) => {
+  return events.find((event) => event._id === id) || null;
+};
+
+const findOneAndUpdate = async (
+  id: string,
+  updateData: Partial<TEvent>,
+  options?: any
+) => {
+  const eventIndex = events.findIndex((event) => event._id === id);
+  if (eventIndex === -1) return null;
+
+  events[eventIndex] = {
+    ...events[eventIndex],
+    ...updateData,
+    updatedAt: new Date(),
+  };
+
+  return options?.new ? events[eventIndex] : events[eventIndex];
+};
+
+const findByIdAndDelete = async (id: string) => {
+  const eventIndex = events.findIndex((event) => event._id === id);
+  if (eventIndex === -1) return null;
+
+  const deletedEvent = events[eventIndex];
+  events.splice(eventIndex, 1);
+  return deletedEvent;
+};
+
+const countDocuments = async (query?: any) => {
+  let filteredEvents = events;
+
+  if (query && query.archived) {
+    filteredEvents = events.filter(
+      (event) => event.archived === query.archived.$ne
+    );
+  } else {
+    filteredEvents = events.filter((event) => !event.archived);
+  }
+
+  return filteredEvents.length;
+};
+
+export const Event = {
+  create,
+  find,
+  findById,
+  findOneAndUpdate,
+  findByIdAndDelete,
+  countDocuments,
+};
