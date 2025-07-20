@@ -1,11 +1,13 @@
 import { Router } from "express";
 
+import { EventRoutes } from "../modules/Events/events.route";
+
 const router = Router();
 
 const moduleRoutes = [
   {
-    path: "/auth",
-    route: "ok",
+    path: "/events",
+    route: EventRoutes,
   },
 ];
 
